@@ -1,89 +1,57 @@
 import asyncio
 import logging
-import os
-import subprocess
-from typing import Generator
+import re
+from telethon import events, TelegramClient
+from telethon.errors import MessageIdInvalidError
+from telethon.sessions import StringSession
+import uvloop
+asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+api_id = 8447214
+api_hash = '9ec5782ddd935f7e2763e5e49a590c0d'
+string_session = "1BVtsOHYBuxXWOSoRUYuPL6Hr_MuCZjkm1eIXwNPCJwsHg3qRIg1aE55rn6BA83lNAuXRE00DGmjWesDzhqMarkD84ffWZlmHMwZPtmetKFv1G04bMcZ0DoVEi2RPwjNmRpIlotQrClfvd79e1SP53cJ6A_se8MMhAgblVtZFgZt7KpzkJzWrTwh-4b_9QVF5pVz0MUWgQ0AnwqxmD_Gzx_TPFl37S_fhBu0zR8BmNWgLVkv8_iij_FZ4HuEGw2_iHnYaQG8QyahSwMQ3jkWWwJI-T0ODGAkpMio3ko1ZDnwy1ZrqIF9fn7Y5f39Nx0O7ZkvwMMbTEECvtNeq3ODY2yXyZ8qNCSY="
+client = TelegramClient(StringSession(string_session), api_id, api_hash)
+async def main():
+    await client.start()
+    logger.info('''
+ ___                   _______            _________________
+|   |                /   ___   \         |______    _______|
+|   |               /   /   \   \               |   |
+|   |              /   /__ __\   \              |   |
+|   |    ___      /   ________\   \             |   |
+|   |___|   |    /   /         \   \      ______|   |______
+\___________/   /___/           \___\    |_________________|
+''')
+async def send_riddle():
+    while True:
+        try:
+            await client.send_message("@lustXcatcherrobot", "/riddle")
+            response = await client.get_messages("@lustXcatcherrobot", limit=1)
+            response_text = response[0].text
+            logger.info(f"Received response: {response_text}")
+            if "Please wait" in response_text:
+                wait_time_match = re.search(r'Please wait (\d+) seconds',
+response_text)
+                if wait_time_match:
+                    wait_time = int(wait_time_match.group(1))
+                    if wait_time == 0:
+                        logger.info("Wait time is 0, sending immediately...")
+                        continue  # Skip the sleep and send immediately
+                    else:
+                        logger.info(f"Waiting for {wait_time} seconds...")                        await asyncio.sleep(wait_time)
+            else:
+                logger.info("Waiting for 10 seconds (default)...")
+                await asyncio.sleep(10)  # Default wait time if no specific wait time is found
+        except Exception as e:
+            logger.error(f"Error sending riddle: {e}")
+@client.on(events.NewMessage(from_users="@lustXcatcherrobot"))
+async def handle_new_message(event):
+    if event.buttons:
+        logger.info("Received buttons, clicking on them...")
+        tasks = [button.click() for row in event.buttons for button in row]
+        await asyncio.gather(*tasks)
 
-import uvicorn
-from fastapi import FastAPI, Request, Response
-from fastapi.responses import HTMLResponse, StreamingResponse
-
-from __version__ import __version__
-from src.bot import bot
-from src.utils import (
-    BOT_NAME,
-    create_initial_folders,
-    initialize_logging,
-    terminal_html,
-)
-
-# Initialize
-console_out = initialize_logging()
-create_initial_folders()
-
-# Bot version
-try:
-    BOT_VERSION = __version__
-except:
-    BOT_VERSION = "with unknown version"
-
-
-# API and app handling
-app = FastAPI(
-    title=BOT_NAME,
-)
-
-
-@app.on_event("startup")
-def startup_event() -> None:
-    try:
-        loop = asyncio.get_event_loop()
-        background_tasks = set()
-        task = loop.create_task(bot())
-        background_tasks.add(task)
-        task.add_done_callback(background_tasks.discard)
-    except Exception as e:
-        logging.critical(f"Error occurred while starting up app: {e}")
-
-
-@app.get("/")
-def root() -> str:
-    return f"{BOT_NAME} {BOT_VERSION} is online"
-
-
-@app.get("/health")
-def health_check() -> str:
-    return f"{BOT_NAME} {BOT_VERSION} is online"
-
-
-@app.get("/log")
-async def log_check() -> StreamingResponse:
-    async def generate_log() -> Generator[bytes, None, None]:
-        console_log = console_out.getvalue()
-        yield f"{console_log}".encode("utf-8")
-
-    return StreamingResponse(generate_log())
-
-
-# @app.get("/terminal", response_class=HTMLResponse)
-# async def terminal(request: Request) -> Response:
-#     return Response(content=terminal_html(), media_type="text/html")
-
-
-# @app.post("/terminal/run")
-# async def run_command(command: dict) -> str:
-#     try:
-#         output_bytes = subprocess.check_output(
-#             command["command"], shell=True, stderr=subprocess.STDOUT
-#         )
-#         output_str = output_bytes.decode("utf-8")
-#         # Split output into lines and remove any leading/trailing whitespace
-#         output_lines = [line.strip() for line in output_str.split("\n")]
-#         # Join lines with a <br> tag for display in HTML
-#         formatted_output = "<br>".join(output_lines)
-#     except subprocess.CalledProcessError as e:
-#         formatted_output = e.output.decode("utf-8")
-#     return formatted_output
 
 
 # Minnion run
@@ -91,3 +59,6 @@ if __name__ == "__main__":
     HOST = os.getenv("HOST", "0.0.0.0")
     PORT = os.getenv("PORT", 8080)
     uvicorn.run(app, host=HOST, port=PORT)
+    client.loop.run_until_complete(main())
+    client.loop.create_task(send_riddle())
+    client.run_until_disconnected()
