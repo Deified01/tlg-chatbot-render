@@ -2,7 +2,10 @@ import asyncio
 import logging
 import os
 import threading
+import re
 from flask import Flask
+from telethon import events, TelegramClient, errors
+from telethon.sessions import StringSession
 
 app = Flask(__name__)
 
