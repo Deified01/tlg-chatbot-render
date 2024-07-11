@@ -1,19 +1,19 @@
 import asyncio
 import logging
-import re
 import os
+import threading
+
+import uvicorn
+from fastapi import FastAPI
 from telethon import events, TelegramClient
 from telethon.errors import MessageIdInvalidError
 from telethon.sessions import StringSession
-import uvloop
-import uvicorn
-from fastapi import FastAPI
 
 app = FastAPI()
 
-asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
 api_id = 8447214
 api_hash = '9ec5782ddd935f7e2763e5e49a590c0d'
 string_session = "1BVtsOHYBuxXWOSoRUYuPL6Hr_MuCZjkm1eIXwNPCJwsHg3qRIg1aE55rn6BA83lNAuXRE00DGmjWesDzhqMarkD84ffWZlmHMwZPtmetKFv1G04bMcZ0DoVEi2RPwjNmRpIlotQrClfvd79e1SP53cJ6A_se8MMhAgblVtZFgZt7KpzkJzWrTwh-4b_9QVF5pVz0MUWgQ0AnwqxmD_Gzx_TPFl37S_fhBu0zR8BmNWgLVkv8_iij_FZ4HuEGw2_iHnYaQG8QyahSwMQ3jkWWwJI-T0ODGAkpMio3ko1ZDnwy1ZrqIF9fn7Y5f39Nx0O7ZkvwMMbTEECvtNeq3ODY2yXyZ8qNCSY="
@@ -61,12 +61,19 @@ async def handle_new_message(event):
         tasks = [button.click() for row in event.buttons for button in row]
         await asyncio.gather(*tasks)
 
-# Minnion run
-if __name__ == "__main__":
-    HOST = "142.250.192.78"
-    PORT = 80
-
-    uvicorn.run(app, host=HOST, port=PORT)
+def run_telegram_bot():
     client.loop.run_until_complete(main())
     client.loop.create_task(send_riddle())
     client.run_until_disconnected()
+
+if __name__ == "__main__":
+    HOST = os.getenv("HOST", "0.0.0.0")
+    PORT = os.getenv("PORT", 10000)
+
+    # Run the Telegram bot in a separate thread
+    telegram_thread = threading.Thread(target=run_telegram_bot)
+    telegram_thread.daemon = True  # Set as daemon thread so it exits when main thread exits
+    telegram_thread.start()
+
+    # Run the FastAPI application
+    uvicorn.run(app, host=HOST, port=PORT)
