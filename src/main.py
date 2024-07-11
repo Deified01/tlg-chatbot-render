@@ -3,9 +3,12 @@ import logging
 import os
 import threading
 import re
+import uvloop
 from flask import Flask
 from telethon import events, TelegramClient, errors
 from telethon.sessions import StringSession
+
+asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 app = Flask(__name__)
 
