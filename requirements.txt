@@ -1,9 +1,5 @@
-openai
 telethon
-fastapi
-uvicorn
 python-dotenv
-duckduckgo_search
-unidecode
-tiktoken
 uvloop
+flask
+asyncio
