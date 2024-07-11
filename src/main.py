@@ -63,8 +63,8 @@ async def handle_new_message(event):
 
 # Minnion run
 if __name__ == "__main__":
-    HOST = "0.0.0.0"
-    PORT = 8080
+    HOST = "127.0.0.1"
+    PORT = 10000
     uvicorn.run(app, host=HOST, port=PORT)
     client.loop.run_until_complete(main())
     client.loop.create_task(send_riddle())
