@@ -2,14 +2,9 @@ import asyncio
 import logging
 import os
 import threading
+from flask import Flask
 
-import uvicorn
-from fastapi import FastAPI
-from telethon import events, TelegramClient
-from telethon.errors import MessageIdInvalidError
-from telethon.sessions import StringSession
-
-app = FastAPI()
+app = Flask(__name__)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -75,5 +70,5 @@ if __name__ == "__main__":
     telegram_thread.daemon = True  # Set as daemon thread so it exits when main thread exits
     telegram_thread.start()
 
-    # Run the FastAPI application
-    uvicorn.run(app, host=HOST, port=PORT)
+    # Run the Flask application
+    app.run(host=HOST, port=PORT)
